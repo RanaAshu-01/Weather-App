@@ -7,9 +7,14 @@ const App = () => {
   const [city, setCity] = useState("")
   const [weather, setWeather] = useState(null)
   const [error, setError] = useState("")
+  const [lat, setLat] = useState("")
+  const [lon, setLon] = useState("")
+  const [defaultvalue, setDefaultValue] = useState("")
+  const [loading, setLoading] = useState(true)
 
 
   const API_KEY = "341d0ce8f43f17aa1f3667c96e3a38c3"
+
 
   const getWeather = async (cityName) => {
     try {
@@ -39,21 +44,61 @@ const App = () => {
 
 
   useEffect(() => {
-    getWeather("Delhi")
-  }, [])
+    if (defaultvalue) {
+      getWeather(defaultvalue.name)
+    }
+  }, [defaultvalue])
 
 
 
   const handleSubmit = (e) => {
+
+    if (city === "") return
     e.preventDefault()
     getWeather(city)
   }
 
 
+  const geoLocation = () => {
+    navigator.geolocation.getCurrentPosition(success, error)
+
+    function success(p) {
+      setLat(p.coords.latitude)
+      setLon(p.coords.longitude)
+    }
+
+    function error() {
+      console.log("error occured")
+    }
+  }
+
+  useEffect(() => {
+    geoLocation()
+  }, [])
+
+  useEffect(() => {
+    if (lat && lon) {
+      getcurrentpos()
+    }
+  }, [lat, lon])
+
+  const getcurrentpos = async () => {
+    setLoading(true)
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`
+    )
+
+    const data = await response.json()
+    setDefaultValue(data)
+    setLoading(false)
+  }
+
+
+
   return <>
     <Navbar />
 
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center">/
 
       <div className="bg-cover w-[95%] md:w-[80%] lg:w-[60%] 
            min-h-[86vh] rounded-2xl mt-5 p-4 "
@@ -93,6 +138,14 @@ const App = () => {
           </button>
         </form>
 
+        {loading && (
+          <div className="w-full flex justify-center mt-20">
+            <p className="text-white text-4xl font-bold animate-pulse">
+              Loading...
+            </p>
+          </div>
+        )}
+
         {error && (
           <p className="text-red-500 text-center font-bold mt-4">
             {error}
@@ -120,7 +173,7 @@ const App = () => {
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 text-sm"
->
+              >
 
                 <div className="bg-white/20 p-3 rounded-xl">
                   💧 Humidity: {weather.main.humidity}%
